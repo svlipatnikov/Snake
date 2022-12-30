@@ -47,13 +47,16 @@ code {
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-direction: column;
   background-color: rgba(0, 0, 0, 0.5);
 }
 
-.end-game h1 {
+.end-game h1,
+.end-game h2 {
   font-size: 100px;
   font-weight: 600;
   color: #ccc;
   letter-spacing: 10px;
   text-shadow: 10px 10px 10px #000;
+  margin-bottom: 0;
 }

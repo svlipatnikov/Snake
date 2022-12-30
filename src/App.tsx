@@ -1,11 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import GameField from "./components/GameField";
 import { calcNextSnake, canChangeDirection, getNextApple, getNextHead, isCrashToBorder, isCrashToSnake, isEatApple } from "./helpers";
 import { ICell, IDirection, ISnake } from "./types";
 
 const COLUMNS = 15
 const ROWS = 15
-const SPEED_MS = 500
+const INIT_SPEED_MS = 500
+const DECREMENT_SPEED_MS = 20
 
 const snakeInit: ISnake = [
   { x: Math.ceil(COLUMNS / 2), y: ROWS - 2 },
@@ -21,6 +22,8 @@ enum IStatus {
 function App() {
   const [status, setStatus] = useState<IStatus>(IStatus.PLAY)
   const [snake, setSnake] = useState<ISnake>(snakeInit)
+  const [score, setScore] = useState<number>(0)
+  const [speed, setSpeed] = useState<number>(INIT_SPEED_MS)
   
   const timer = useRef(null)
   const apple = useRef<ICell>(getNextApple(snake, COLUMNS, ROWS))
@@ -31,6 +34,17 @@ function App() {
   const direction = useRef(IDirection.UP)
   const nextDirection = useRef(IDirection.UP)
 
+  const handleRestart = useCallback(() => {
+    setSnake(snakeInit)
+    setStatus(IStatus.PLAY)
+    setScore(0)
+    setSpeed(INIT_SPEED_MS)
+    apple.current = getNextApple(snakeInit, COLUMNS, ROWS)
+    direction.current = IDirection.UP
+    nextDirection.current = IDirection.UP
+  }, [])
+
+
   const keyActions: Record<React.KeyboardEvent['key'], () => void> = useMemo(() => ({
     'ArrowUp': () => nextDirection.current = IDirection.UP,
     'ArrowDown': () => nextDirection.current = IDirection.DOWN,
@@ -40,15 +54,21 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: any) => {
-      const handle = keyActions[e.key]
-      handle?.()
+      if (status === IStatus.END) {
+        handleRestart()
+      } else {
+        const action = keyActions[e.key]
+        action?.()
+      }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [keyActions])
+  }, [keyActions, status, handleRestart])
 
   useEffect(() => {
+    if (status === IStatus.END) return
+
     timer.current = setInterval(() => {
       // calc direction
       if (canChangeDirection(direction.current, nextDirection.current)) {
@@ -73,21 +93,18 @@ function App() {
       }
 
       // gen new Apple
-      if (isEat) apple.current = getNextApple(nextSnake, COLUMNS, ROWS)
+      if (isEat) {
+        setSpeed(s => s - DECREMENT_SPEED_MS)
+        setScore(s => s + 1)
+        apple.current = getNextApple(nextSnake, COLUMNS, ROWS)
+      }
 
       setSnake(nextSnake)
-    }, SPEED_MS)
+    }, speed)
 
     return () => clearInterval(timer.current)
-  }, [])
+  }, [speed, status])
 
-  const handleRestart = () => {
-    setSnake(snakeInit)
-    setStatus(IStatus.PLAY)
-    apple.current = getNextApple(snakeInit, COLUMNS, ROWS)
-    direction.current = IDirection.UP
-    nextDirection.current = IDirection.UP
-  }
 
   return (
     <div className="app-container">
@@ -99,8 +116,9 @@ function App() {
       />
 
       {status === IStatus.END && (
-        <div className="end-game" onClick={handleRestart}>
+        <div className="end-game">
           <h1>GAME OVER</h1>
+          <h2>{`Score: ${score}`}</h2>
         </div>
       )}
     </div>
