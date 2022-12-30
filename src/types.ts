@@ -12,3 +12,8 @@ export interface ICell {
 }
 
 export type ISnake = Array<ICell>
+
+export enum IStatus {
+  PLAY,
+  END
+}

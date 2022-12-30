@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import GameField from "./components/GameField";
 import { calcNextSnake, canChangeDirection, getNextApple, getNextHead, isCrashToBorder, isCrashToSnake, isEatApple } from "./helpers";
-import { ICell, IDirection, ISnake } from "./types";
+import { ICell, IDirection, ISnake, IStatus } from "./types";
 
 const COLUMNS = 15
 const ROWS = 15
@@ -14,23 +14,18 @@ const snakeInit: ISnake = [
   { x: Math.ceil(COLUMNS / 2), y: ROWS },
 ]
 
-enum IStatus {
-  PLAY,
-  END
-}
-
 function App() {
   const [status, setStatus] = useState<IStatus>(IStatus.PLAY)
   const [snake, setSnake] = useState<ISnake>(snakeInit)
   const [score, setScore] = useState<number>(0)
   const [speed, setSpeed] = useState<number>(INIT_SPEED_MS)
-  
+
   const timer = useRef(null)
   const apple = useRef<ICell>(getNextApple(snake, COLUMNS, ROWS))
-  
+
   const snakeRef = useRef<ISnake>(snake)
   snakeRef.current = snake
-  
+
   const direction = useRef(IDirection.UP)
   const nextDirection = useRef(IDirection.UP)
 
@@ -50,21 +45,16 @@ function App() {
     'ArrowDown': () => nextDirection.current = IDirection.DOWN,
     'ArrowLeft': () => nextDirection.current = IDirection.LEFT,
     'ArrowRight': () => nextDirection.current = IDirection.RIGHT,
-  }), [])
+    'Enter': handleRestart,
+    'Escape': handleRestart,
+  }), [handleRestart])
 
   useEffect(() => {
-    const handleKeyDown = (e: any) => {
-      if (status === IStatus.END) {
-        setTimeout(handleRestart, 1000)
-      } else {
-        const action = keyActions[e.key]
-        action?.()
-      }
-    }
+    const handleKeyDown = (e: any) => keyActions[e.key]?.()
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [keyActions, status, handleRestart])
+  }, [keyActions, status])
 
   useEffect(() => {
     if (status === IStatus.END) return
@@ -119,6 +109,7 @@ function App() {
         <div className="end-game">
           <h1>GAME OVER</h1>
           <h2>{`Score: ${score}`}</h2>
+          <h3>Press "Enter" or "Esc" to RESTART</h3>
         </div>
       )}
     </div>
