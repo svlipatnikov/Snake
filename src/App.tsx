@@ -55,7 +55,7 @@ function App() {
   useEffect(() => {
     const handleKeyDown = (e: any) => {
       if (status === IStatus.END) {
-        handleRestart()
+        setTimeout(handleRestart, 1000)
       } else {
         const action = keyActions[e.key]
         action?.()
